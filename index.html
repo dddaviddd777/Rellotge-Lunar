@@ -125,7 +125,39 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:1px solid 
 .cal{margin-top:64px;border-top:1px solid var(--line);padding-top:18px}
 .cal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:0 40px}
 
-footer{margin-top:64px;font-size:12px;color:var(--dim);max-width:70ch}
+.more{margin-top:64px;border-top:1px solid var(--line);padding-top:28px;display:grid;justify-items:center;text-align:center;gap:12px}
+.more p{margin:0;color:var(--muted);max-width:46ch}
+.btn{font:inherit;font-size:14px;color:var(--night);background:var(--ink);border:0;border-radius:999px;padding:12px 22px;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:transform .25s,box-shadow .25s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 28px rgba(232,216,168,.35)}
+.btn svg{width:16px;height:16px}
+.link{font:inherit;font-size:13px;color:var(--glow);background:none;border:0;padding:4px 0;margin-top:10px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(232,216,168,.4)}
+
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(3,4,8,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transition:opacity .35s ease}
+.sheet.open{opacity:1}
+.sheet-panel{position:relative;width:min(100%,700px);max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;background:#0a0c14;border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;
+  padding:8px max(20px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  transform:translateY(40px);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.sheet.open .sheet-panel{transform:none}
+@media (min-width:760px){.sheet{align-items:center}.sheet-panel{border-radius:22px;border-bottom:1px solid var(--line);max-height:86vh;padding-inline:40px}}
+.sheet-bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;background:#0a0c14;z-index:2}
+.sheet-bar .eyebrow{margin:0}
+.close{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.close:hover{border-color:var(--glow)}
+.guide h2{font-size:clamp(30px,6vw,40px);margin:4px 0 12px}
+.guide h3{font-family:var(--display);font-weight:400;font-size:24px;margin:28px 0 8px}
+.guide p{margin:0 0 10px;max-width:62ch}
+.guide .lead{font-size:16px;color:var(--ink)}
+.guide ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.guide li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.guide li b{font-family:var(--mono);font-weight:400;color:var(--glow);font-size:13px;padding-top:2px}
+.guide .now{margin-top:28px;padding:14px 16px;border:1px solid rgba(232,216,168,.3);border-radius:12px;color:var(--ink)}
+.diagram{margin:18px 0 6px}
+.diagram svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+.diagram text{font-family:var(--body);font-size:13px;fill:var(--muted)}
+.diagram .num{font-family:var(--mono);fill:var(--ink)}
+.diagram .num.cur{fill:var(--glow)}
+
+footer{margin-top:48px;font-size:12px;color:var(--dim);max-width:70ch}
 
 .fade{animation:fade .9s ease both}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -199,6 +231,7 @@ footer{margin-top:64px;font-size:12px;color:var(--dim);max-width:70ch}
         <text class="age" id="ringAge" x="170" y="150" text-anchor="middle">—</text>
         <text x="170" y="172" text-anchor="middle">dies de 29,5</text>
       </svg>
+      <div style="text-align:center"><button class="link" type="button" data-open-guide>Com funcionen les fases?</button></div>
     </section>
 
     <section class="panel">
@@ -235,9 +268,55 @@ footer{margin-top:64px;font-size:12px;color:var(--dim);max-width:70ch}
     <div class="cal-grid" id="calendar"></div>
   </section>
 
+  <section class="more">
+    <p>Per què la lluna canvia de forma, com distingir si creix o minva i per què no surt sempre a la mateixa hora.</p>
+    <button class="btn" type="button" data-open-guide>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor"/><path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5 Z" fill="currentColor"/></svg>
+      Com funcionen les fases
+    </button>
+  </section>
+
   <footer>
     Totes les dades es calculen al teu dispositiu, sense internet, amb els algoritmes astronòmics de Jean Meeus (<i>Astronomical Algorithms</i>). Les hores de les fases tenen una precisió d'un minut aproximadament. La sortida i la posta, d'uns pocs minuts. Hores en la zona horària del teu dispositiu.
   </footer>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+  <div class="sheet-panel" id="sheetPanel" tabindex="-1">
+    <div class="sheet-bar">
+      <span class="eyebrow">Guia</span>
+      <button class="close" id="closeGuide" type="button" aria-label="Tanca la guia">×</button>
+    </div>
+    <article class="guide">
+      <h2 id="guideTitle">Com funcionen les fases</h2>
+      <p class="lead">Les fases no les causa l'ombra de la Terra. La Lluna sempre té mitja cara il·luminada pel Sol, la que mira cap a ell. El que canvia durant el mes és quina part d'aquesta meitat il·luminada veiem des de la Terra, a mesura que la Lluna li fa la volta.</p>
+      <div class="diagram" id="diagram"></div>
+      <p style="color:var(--muted);font-size:13px;text-align:center">A dalt, la Lluna vista des de sobre, al voltant de la Terra. A sota, com la veiem nosaltres. La lluentor marca on som ara.</p>
+
+      <h3>Un cicle de 29,5 dies</h3>
+      <p>És el temps que triga la Lluna a passar per totes les fases. Durant aquest temps fa una volta a la Terra, i la Terra alhora avança al voltant del Sol.</p>
+
+      <h3>Les quatre fases principals</h3>
+      <p>Són moments concrets, amb dia, hora i minut. Són les que mostra el compte enrere.</p>
+      <ul>
+        <li><b>1</b><span><strong>Lluna nova.</strong> La Lluna queda entre la Terra i el Sol. La cara il·luminada mira cap a l'altre costat i no la veiem.</span></li>
+        <li><b>3</b><span><strong>Quart creixent.</strong> Ha fet un quart de volta. En veiem la meitat dreta il·luminada.</span></li>
+        <li><b>5</b><span><strong>Lluna plena.</strong> La Terra queda al mig i veiem tota la cara il·luminada.</span></li>
+        <li><b>7</b><span><strong>Quart minvant.</strong> Tres quarts de volta. En veiem la meitat esquerra.</span></li>
+      </ul>
+
+      <h3>Les fases intermèdies</h3>
+      <p>Les posicions 2, 4, 6 i 8 són els dies de transició. En diem creixent o minvant quan se'n veu menys de la meitat, en forma de falç, i gibosa quan se'n veu més de la meitat.</p>
+
+      <h3>Creixent o minvant?</h3>
+      <p>Hi ha una dita popular per recordar-ho: la lluna és mentidera. Quan fa forma de C, decreix, i quan fa forma de D, creix. Funciona a l'hemisferi nord. A l'hemisferi sud és al revés, perquè la veuen girada.</p>
+
+      <h3>Per què no surt sempre a la mateixa hora?</h3>
+      <p>Cada dia la Lluna surt uns 50 minuts més tard que el dia anterior. Per això la lluna plena surt quan es pon el sol, i la de quart minvant surt cap a mitjanit i es veu al matí, encara que sigui de dia.</p>
+
+      <p class="now" id="guideNow"></p>
+    </article>
+  </div>
 </div>
 
 <script>
@@ -603,6 +682,7 @@ function update() {
     nameEl.classList.remove('fade'); void nameEl.offsetWidth; nameEl.classList.add('fade');
     renderImpl(idx);
     lastPhaseIdx = idx;
+    if (guideOpen) renderGuide(idx);
   }
   const exact = [prev, next].find(p => Math.abs(p.jd - jd) < .75);
   $('phaseSub').textContent = exact
@@ -729,6 +809,74 @@ function setupScrub() {
     requestAnimationFrame(step);
   });
 }
+
+/* ---------- Guia de les fases ---------- */
+const LIGHT = '#ece7d8', DARK = '#2b2e3b', GLOW = '#e8d8a8';
+function litPath(i, cx, cy, r) {
+  const k = .6 * r, top = `${cx} ${cy - r}`, bot = `${cx} ${cy + r}`;
+  switch (i) {
+    case 1: return `M${top} A${r} ${r} 0 0 1 ${bot} A${k} ${r} 0 0 0 ${top} Z`;
+    case 2: return `M${top} A${r} ${r} 0 0 1 ${bot} Z`;
+    case 3: return `M${top} A${r} ${r} 0 0 1 ${bot} A${k} ${r} 0 0 1 ${top} Z`;
+    case 5: return `M${top} A${r} ${r} 0 0 0 ${bot} A${k} ${r} 0 0 0 ${top} Z`;
+    case 6: return `M${top} A${r} ${r} 0 0 0 ${bot} Z`;
+    case 7: return `M${top} A${r} ${r} 0 0 0 ${bot} A${k} ${r} 0 0 1 ${top} Z`;
+  }
+  return '';
+}
+const SHORT = [['Nova'], ['Creixent'], ['Quart', 'creixent'], ['Gibosa', 'creixent'], ['Plena'], ['Gibosa', 'minvant'], ['Quart', 'minvant'], ['Minvant']];
+function buildDiagram(cur) {
+  const cx = 180, cy = 150, R = 90, mr = 11;
+  let s = `<svg viewBox="0 0 400 495" role="img" aria-label="La Lluna al voltant de la Terra i com es veu cada fase">`;
+  s += `<defs><marker id="sunArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="${GLOW}" stroke-width="1.5" stroke-linecap="round"/></marker></defs>`;
+  s += `<text x="352" y="92" text-anchor="middle">Llum del Sol</text>`;
+  for (const y of [112, 150, 188]) s += `<line x1="396" y1="${y}" x2="318" y2="${y}" stroke="${GLOW}" stroke-opacity=".7" stroke-width="1.2" marker-end="url(#sunArrow)"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(236,231,216,.18)" stroke-dasharray="3 4"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="15" fill="#4f7fc4"/><text x="${cx}" y="${cy + 34}" text-anchor="middle">Terra</text>`;
+  for (let i = 0; i < 8; i++) {
+    const a = i * 45 * RAD, x = +(cx + R * Math.cos(a)).toFixed(1), y = +(cy - R * Math.sin(a)).toFixed(1);
+    const nx = +(cx + 116 * Math.cos(a)).toFixed(1), ny = +(cy - 116 * Math.sin(a)).toFixed(1);
+    if (i === cur) s += `<circle cx="${x}" cy="${y}" r="${mr + 6}" fill="${GLOW}" fill-opacity=".14" stroke="${GLOW}" stroke-opacity=".7"/>`;
+    s += `<circle cx="${x}" cy="${y}" r="${mr}" fill="${DARK}"/><path d="M${x} ${y - mr} A${mr} ${mr} 0 0 1 ${x} ${y + mr} Z" fill="${LIGHT}"/>`;
+    s += `<text class="num${i === cur ? ' cur' : ''}" x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central">${i + 1}</text>`;
+  }
+  s += `<text x="200" y="284" text-anchor="middle">Com la veiem des de la Terra (hemisferi nord)</text>`;
+  for (let i = 0; i < 8; i++) {
+    const x = [65, 155, 245, 335][i % 4], y = i < 4 ? 335 : 430, r = 15;
+    if (i === cur) s += `<circle cx="${x}" cy="${y}" r="${r + 6}" fill="${GLOW}" fill-opacity=".14" stroke="${GLOW}" stroke-opacity=".7"/>`;
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${i === 4 ? LIGHT : DARK}" stroke="rgba(236,231,216,.25)" stroke-width=".6"/>`;
+    const p = litPath(i, x, y, r); if (p) s += `<path d="${p}" fill="${LIGHT}"/>`;
+    s += `<text class="num${i === cur ? ' cur' : ''}" x="${x}" y="${y - 30}" text-anchor="middle">${i + 1}</text>`;
+    SHORT[i].forEach((w, j) => { s += `<text x="${x}" y="${y + 36 + j * 15}" text-anchor="middle">${w}</text>`; });
+  }
+  return s + '</svg>';
+}
+let guideOpen = false, guideReturn = null;
+function renderGuide(idx) {
+  $('diagram').innerHTML = buildDiagram(idx);
+  $('guideNow').textContent = `${offsetH ? 'En el moment que estàs explorant' : 'Ara mateix'} som a la posició ${idx + 1}: ${NAMES[idx].toLowerCase()}.`;
+}
+function openGuide(e) {
+  guideReturn = e && e.currentTarget;
+  renderGuide(lastPhaseIdx < 0 ? 0 : lastPhaseIdx);
+  const sh = $('sheet');
+  sh.hidden = false; guideOpen = true;
+  document.body.style.overflow = 'hidden';
+  $('sheetPanel').scrollTop = 0;
+  requestAnimationFrame(() => requestAnimationFrame(() => sh.classList.add('open')));
+  setTimeout(() => $('closeGuide').focus(), 60);
+}
+function closeGuide() {
+  const sh = $('sheet');
+  sh.classList.remove('open'); guideOpen = false;
+  document.body.style.overflow = '';
+  setTimeout(() => { if (!guideOpen) sh.hidden = true; }, reduce ? 0 : 400);
+  if (guideReturn) guideReturn.focus();
+}
+document.querySelectorAll('[data-open-guide]').forEach(b => b.addEventListener('click', openGuide));
+$('closeGuide').addEventListener('click', closeGuide);
+$('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeGuide(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && guideOpen) closeGuide(); });
 
 sizeSky(); requestAnimationFrame(drawSky);
 addEventListener('resize', () => { sizeSky(); if (reduce) drawSky(0); update(); });
