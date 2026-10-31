@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rellotge Lunar</title>
+<meta name="description" content="Fase lunar en temps real, pròxima fase i què implica.">
+<meta name="theme-color" content="#05060b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lluna">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icona-192.png">
+<link rel="apple-touch-icon" href="icona-180.png">
+<style>*,*::before,*::after{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap">
+<style>
+/* Layout: una sola columna nocturna; la lluna és l'única protagonista i les dades queden sota, separades per línies fines */
+:root{
+  --night:#05060b;
+  --ink:#ece7d8;
+  --muted:#9095a8;
+  --dim:#5d6277;
+  --line:rgba(236,231,216,.12);
+  --glow:#e8d8a8;
+  --cool:#a3b4df;
+  --display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--night);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
+
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:22px;letter-spacing:.01em}
+.brand i{color:var(--muted)}
+.clock{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.clock b{color:var(--ink);font-weight:400}
+
+.hero{display:grid;justify-items:center;text-align:center;padding-top:26px}
+.moonbox{position:relative;width:min(74vw,400px);max-width:100%;aspect-ratio:1}
+.halo{position:absolute;inset:-24%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(232,216,168,.20) 0%,rgba(163,180,223,.07) 38%,transparent 64%);
+  opacity:var(--h,.5);transition:opacity 1.4s ease}
+.rot{position:relative;width:100%;height:100%;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.rot.south{transform:rotate(180deg)}
+#moon{width:100%;height:100%;display:block;animation:rise 2.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:scale(.93);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+
+.eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.phase{font-family:var(--display);font-weight:400;font-size:clamp(44px,9vw,78px);line-height:1;margin:22px 0 6px;text-wrap:balance;transition:opacity .5s}
+.sub{color:var(--muted);font-size:14px;min-height:1.5em}
+.viewing{display:inline-flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--glow);font-family:var(--mono);opacity:0;transition:opacity .4s}
+.viewing.on{opacity:1}
+
+.stats{display:flex;justify-content:center;gap:clamp(22px,7vw,64px);margin-top:22px;flex-wrap:wrap}
+.stat{display:grid;gap:2px}
+.stat .v{font-family:var(--mono);font-weight:300;font-size:22px;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+
+.scrub{width:min(100%,520px);margin:30px auto 0;display:grid;gap:10px}
+.scrub-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.scrub-head button{font:inherit;font-size:12px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;transition:border-color .3s,opacity .3s}
+.scrub-head button:hover{border-color:var(--glow)}
+.scrub-head button:disabled{opacity:.35;cursor:default;border-color:var(--line)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;cursor:grab}
+input[type=range]:active{cursor:grabbing}
+input[type=range]::-webkit-slider-runnable-track{height:1px;background:linear-gradient(90deg,transparent,var(--line) 12%,var(--line) 88%,transparent)}
+input[type=range]::-moz-range-track{height:1px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-7.5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 5px rgba(232,216,168,.12),0 0 18px rgba(232,216,168,.5)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--ink);box-shadow:0 0 0 5px rgba(232,216,168,.12),0 0 18px rgba(232,216,168,.5)}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim)}
+
+.count{margin-top:56px;display:grid;justify-items:center;text-align:center;gap:10px}
+.count .what{font-family:var(--display);font-size:30px;line-height:1.1}
+.count .when{color:var(--muted);font-size:14px}
+.digits{display:flex;gap:clamp(14px,4vw,34px);margin-top:6px}
+.digits div{display:grid;justify-items:center}
+.digits b{font-family:var(--mono);font-weight:300;font-size:clamp(30px,7vw,48px);line-height:1;font-variant-numeric:tabular-nums}
+.digits span{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px 40px;margin-top:64px}
+.panel{border-top:1px solid var(--line);padding-top:18px;min-width:0}
+h2{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;margin:0 0 16px}
+
+.ring{width:100%;max-width:360px;display:block;margin:0 auto}
+.ring text{fill:var(--muted);font-family:var(--body);font-size:11px}
+.ring .age{fill:var(--ink);font-family:var(--mono);font-weight:300;font-size:34px}
+.ring #marker{transition:transform 1s cubic-bezier(.2,.7,.2,1)}
+.ring #arc{transition:stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)}
+
+.rows{display:grid}
+.row{display:grid;grid-template-columns:18px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .n{font-size:14px}
+.row .d{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.row svg{display:block}
+.tag{display:inline-block;margin-left:8px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--glow);border:1px solid rgba(232,216,168,.35);border-radius:999px;padding:1px 7px;vertical-align:2px}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));gap:18px;margin-bottom:18px}
+.fact .v{font-family:var(--mono);font-weight:300;font-size:22px;font-variant-numeric:tabular-nums}
+.fact .l{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.loc{display:grid;gap:8px;font-size:13px;color:var(--muted)}
+.loc label{font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+select,.coords input{font:inherit;font-size:14px;color:var(--ink);background:rgba(236,231,216,.04);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:1px solid var(--glow);outline-offset:2px}
+.coords{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0;max-width:62ch}
+
+.impl{margin-top:64px;border-top:1px solid var(--line);padding-top:18px}
+.impl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:26px 32px}
+.impl h3{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:0 0 8px}
+.impl p{margin:0;max-width:60ch;color:var(--ink)}
+.impl p + p{margin-top:8px}
+.impl .myth h3{color:var(--dim)}
+.impl .myth p{color:var(--muted)}
+.belief{font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px dashed var(--dim);color:var(--muted);border-radius:999px;padding:1px 7px;margin-left:6px}
+
+.cal{margin-top:64px;border-top:1px solid var(--line);padding-top:18px}
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:0 40px}
+
+footer{margin-top:64px;font-size:12px;color:var(--dim);max-width:70ch}
+
+.fade{animation:fade .9s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Rellotge <i>Lunar</i></div>
+    <div class="clock" id="clock">—</div>
+  </header>
+
+  <section class="hero" aria-live="polite">
+    <div class="moonbox" id="moonbox">
+      <div class="halo" id="halo"></div>
+      <div class="rot" id="rot"><canvas id="moon" role="img" aria-label="Aspecte actual de la lluna"></canvas></div>
+    </div>
+    <div class="eyebrow" id="eyebrow">Fase actual</div>
+    <h1 class="phase" id="phaseName">—</h1>
+    <div class="sub" id="phaseSub"></div>
+    <div class="viewing" id="viewing">Mostrant un altre moment</div>
+    <div class="stats">
+      <div class="stat"><span class="v" id="sIllum">—</span><span class="l">Il·luminada</span></div>
+      <div class="stat"><span class="v" id="sAge">—</span><span class="l">Edat</span></div>
+      <div class="stat"><span class="v" id="sTrend">—</span><span class="l">Tendència</span></div>
+    </div>
+
+    <div class="scrub">
+      <div class="scrub-head">
+        <span id="scrubLabel">Arrossega per viatjar pel cicle</span>
+        <button id="nowBtn" type="button" disabled>Tornar a ara</button>
+      </div>
+      <input id="scrub" type="range" min="-360" max="360" step="1" value="0" aria-label="Desplaçament en hores respecte d'ara">
+      <div class="ticks"><span>−15 dies</span><span>ara</span><span>+15 dies</span></div>
+    </div>
+  </section>
+
+  <section class="count">
+    <div class="eyebrow">Pròxima fase</div>
+    <div class="what" id="nextName">—</div>
+    <div class="when" id="nextWhen">—</div>
+    <div class="digits" role="timer">
+      <div><b id="cD">0</b><span>dies</span></div>
+      <div><b id="cH">00</b><span>hores</span></div>
+      <div><b id="cM">00</b><span>minuts</span></div>
+      <div><b id="cS">00</b><span>segons</span></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>El cicle</h2>
+      <svg class="ring" viewBox="0 0 340 290" aria-label="Posició dins el cicle lunar">
+        <circle cx="170" cy="145" r="100" fill="none" stroke="rgba(236,231,216,.12)" stroke-width="1"/>
+        <circle id="arc" cx="170" cy="145" r="100" fill="none" stroke="#e8d8a8" stroke-opacity=".55" stroke-width="1.5"
+          stroke-dasharray="628.32" stroke-dashoffset="628.32" transform="rotate(-90 170 145)"/>
+        <g fill="#5d6277">
+          <circle cx="170" cy="45" r="2.5"/><circle cx="270" cy="145" r="2.5"/><circle cx="170" cy="245" r="2.5"/><circle cx="70" cy="145" r="2.5"/>
+          <circle cx="240.7" cy="74.3" r="1.5"/><circle cx="240.7" cy="215.7" r="1.5"/><circle cx="99.3" cy="215.7" r="1.5"/><circle cx="99.3" cy="74.3" r="1.5"/>
+        </g>
+        <text x="170" y="28" text-anchor="middle">Nova</text>
+        <text x="282" y="149" text-anchor="start">Q. creixent</text>
+        <text x="170" y="272" text-anchor="middle">Plena</text>
+        <text x="58" y="149" text-anchor="end">Q. minvant</text>
+        <g id="marker" style="transform-origin:170px 145px">
+          <circle cx="170" cy="45" r="12" fill="#e8d8a8" fill-opacity=".14"/>
+          <circle cx="170" cy="45" r="5" fill="#ece7d8"/>
+        </g>
+        <text class="age" id="ringAge" x="170" y="150" text-anchor="middle">—</text>
+        <text x="170" y="172" text-anchor="middle">dies de 29,5</text>
+      </svg>
+    </section>
+
+    <section class="panel">
+      <h2>Pròximes fases</h2>
+      <div class="rows" id="upcoming"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Avui al cel</h2>
+      <div class="facts">
+        <div class="fact"><div class="v" id="fRise">—</div><div class="l">Sortida</div></div>
+        <div class="fact"><div class="v" id="fSet">—</div><div class="l">Posta</div></div>
+        <div class="fact"><div class="v" id="fDist">—</div><div class="l">Distància</div></div>
+      </div>
+      <div class="loc">
+        <label for="city">Ubicació</label>
+        <select id="city"></select>
+        <div class="coords" id="coords" hidden>
+          <input id="lat" type="number" step="0.01" min="-90" max="90" placeholder="Latitud" aria-label="Latitud">
+          <input id="lon" type="number" step="0.01" min="-180" max="180" placeholder="Longitud" aria-label="Longitud">
+        </div>
+      </div>
+      <p class="note">La ubicació només canvia la sortida i la posta. La fase és la mateixa a tot el món en el mateix instant.</p>
+    </section>
+  </div>
+
+  <section class="impl" id="impl">
+    <h2 id="implTitle">Què implica</h2>
+    <div class="impl-grid" id="implGrid"></div>
+  </section>
+
+  <section class="cal">
+    <h2>Llunes noves i plenes</h2>
+    <div class="cal-grid" id="calendar"></div>
+  </section>
+
+  <footer>
+    Totes les dades es calculen al teu dispositiu, sense internet, amb els algoritmes astronòmics de Jean Meeus (<i>Astronomical Algorithms</i>). Les hores de les fases tenen una precisió d'un minut aproximadament. La sortida i la posta, d'uns pocs minuts. Hores en la zona horària del teu dispositiu.
+  </footer>
+</div>
+
+<script>
+/*ASTRO*/
+const SYN = 29.530588861;
+const RAD = Math.PI / 180;
+const sd = x => Math.sin(x * RAD), cd = x => Math.cos(x * RAD);
+const norm = x => ((x % 360) + 360) % 360;
+const jdOf = date => date.getTime() / 86400000 + 2440587.5;
+const dateOf = jd => new Date((jd - 2440587.5) * 86400000);
+const DELTA_T = 69.2 / 86400; // TT - UT, en dies
+
+// Instant exacte d'una fase principal (Meeus, cap. 49). k enter = nova, .25 = quart creixent, .5 = plena, .75 = quart minvant
+function phaseJDE(k) {
+  const T = k / 1236.85, T2 = T*T, T3 = T2*T, T4 = T3*T;
+  let jde = 2451550.09766 + 29.530588861*k + 0.00015437*T2 - 0.00000015*T3 + 0.00000000073*T4;
+  const E = 1 - 0.002516*T - 0.0000074*T2;
+  const M = 2.5534 + 29.1053567*k - 0.0000014*T2 - 0.00000011*T3;
+  const Mp = 201.5643 + 385.81693528*k + 0.0107582*T2 + 0.00001238*T3 - 0.000000058*T4;
+  const F = 160.7108 + 390.67050284*k - 0.0016118*T2 - 0.00000227*T3 + 0.000000011*T4;
+  const O = 124.7746 - 1.56375588*k + 0.0020672*T2 + 0.00000215*T3;
+  const type = ((Math.round((k - Math.floor(k)) * 4)) % 4 + 4) % 4;
+  let c;
+  if (type === 0 || type === 2) {
+    const n = type === 0;
+    c = (n?-0.40720:-0.40614)*sd(Mp) + (n?0.17241:0.17302)*E*sd(M) + (n?0.01608:0.01614)*sd(2*Mp)
+      + (n?0.01039:0.01043)*sd(2*F) + (n?0.00739:0.00734)*E*sd(Mp-M) - (n?0.00514:0.00515)*E*sd(Mp+M)
+      + (n?0.00208:0.00209)*E*E*sd(2*M) - 0.00111*sd(Mp-2*F) - 0.00057*sd(Mp+2*F) + 0.00056*E*sd(2*Mp+M)
+      - 0.00042*sd(3*Mp) + 0.00042*E*sd(M+2*F) + 0.00038*E*sd(M-2*F) - 0.00024*E*sd(2*Mp-M) - 0.00017*sd(O)
+      - 0.00007*sd(Mp+2*M) + 0.00004*sd(2*Mp-2*F) + 0.00004*sd(3*M) + 0.00003*sd(Mp+M-2*F) + 0.00003*sd(2*Mp+2*F)
+      - 0.00003*sd(Mp+M+2*F) + 0.00003*sd(Mp-M+2*F) - 0.00002*sd(Mp-M-2*F) - 0.00002*sd(3*Mp+M) + 0.00002*sd(4*Mp);
+  } else {
+    c = -0.62801*sd(Mp) + 0.17172*E*sd(M) - 0.01183*E*sd(Mp+M) + 0.00862*sd(2*Mp) + 0.00804*sd(2*F)
+      + 0.00454*E*sd(Mp-M) + 0.00204*E*E*sd(2*M) - 0.00180*sd(Mp-2*F) - 0.00070*sd(Mp+2*F) - 0.00040*sd(3*Mp)
+      - 0.00034*E*sd(2*Mp-M) + 0.00032*E*sd(M+2*F) + 0.00032*E*sd(M-2*F) - 0.00028*E*E*sd(Mp+2*M)
+      + 0.00027*E*sd(2*Mp+M) - 0.00017*sd(O) - 0.00005*sd(Mp-M-2*F) + 0.00004*sd(2*Mp+2*F)
+      - 0.00004*sd(Mp+M+2*F) + 0.00004*sd(Mp-2*M) + 0.00003*sd(Mp+M-2*F) + 0.00003*sd(3*M)
+      + 0.00002*sd(2*Mp-2*F) + 0.00002*sd(Mp-M+2*F) - 0.00002*sd(3*Mp+M);
+    const W = 0.00306 - 0.00038*E*cd(M) + 0.00026*cd(Mp) - 0.00002*cd(Mp-M) + 0.00002*cd(Mp+M) + 0.00002*cd(2*F);
+    c += type === 1 ? W : -W;
+  }
+  const A = [
+    [299.77 + 0.107408*k - 0.009173*T2, 0.000325], [251.88 + 0.016321*k, 0.000165], [251.83 + 26.651886*k, 0.000164],
+    [349.42 + 36.412478*k, 0.000126], [84.66 + 18.206239*k, 0.000110], [141.74 + 53.303771*k, 0.000062],
+    [207.14 + 2.453732*k, 0.000060], [154.84 + 7.306860*k, 0.000056], [34.52 + 27.261239*k, 0.000047],
+    [207.19 + 0.121824*k, 0.000042], [291.34 + 1.844379*k, 0.000040], [161.72 + 24.198154*k, 0.000037],
+    [239.56 + 25.513099*k, 0.000035], [331.55 + 3.592518*k, 0.000023]
+  ];
+  for (const [a, f] of A) jde += f * sd(a);
+  return { jd: jde + c - DELTA_T, type };
+}
+
+function phasesAround(jd, count = 64) {
+  const k0 = Math.floor((jd - 2451550.09766) / SYN) - 1;
+  const out = [];
+  for (let i = 0; i < count; i++) out.push(phaseJDE(k0 + i * 0.25));
+  return out;
+}
+
+// Posició de la Lluna i el Sol (sèries simplificades, error ~1-2')
+function bodies(jd) {
+  const d = jd - 2451543.5;
+  const ws = 282.9404 + 4.70935e-5*d, es = 0.016709 - 1.151e-9*d, Ms = norm(356.0470 + 0.9856002585*d);
+  const Es = Ms + (es / RAD) * sd(Ms) * (1 + es * cd(Ms));
+  const xs = cd(Es) - es, ys = Math.sqrt(1 - es*es) * sd(Es);
+  const lonS = norm(Math.atan2(ys, xs) / RAD + ws);
+  const N = 125.1228 - 0.0529538083*d, inc = 5.1454, w = 318.0634 + 0.1643573223*d, a = 60.2666, e = 0.054900;
+  const Mm = norm(115.3654 + 13.0649929509*d);
+  let Em = Mm + (e / RAD) * sd(Mm) * (1 + e * cd(Mm));
+  for (let j = 0; j < 6; j++) Em = Em - (Em - (e / RAD) * sd(Em) - Mm) / (1 - e * cd(Em));
+  const x = a * (cd(Em) - e), y = a * Math.sqrt(1 - e*e) * sd(Em);
+  const r = Math.hypot(x, y), v = Math.atan2(y, x) / RAD;
+  const xe = r * (cd(N)*cd(v+w) - sd(N)*sd(v+w)*cd(inc));
+  const ye = r * (sd(N)*cd(v+w) + cd(N)*sd(v+w)*cd(inc));
+  const ze = r * sd(v+w) * sd(inc);
+  let lon = Math.atan2(ye, xe) / RAD, lat = Math.atan2(ze, Math.hypot(xe, ye)) / RAD;
+  const Ls = Ms + ws, Lm = Mm + w + N, D = Lm - Ls, F = Lm - N;
+  lon += -1.274*sd(Mm-2*D) + 0.658*sd(2*D) - 0.186*sd(Ms) - 0.059*sd(2*Mm-2*D) - 0.057*sd(Mm-2*D+Ms)
+       + 0.053*sd(Mm+2*D) + 0.046*sd(2*D-Ms) + 0.041*sd(Mm-Ms) - 0.035*sd(D) - 0.031*sd(Mm+Ms)
+       - 0.015*sd(2*F-2*D) + 0.011*sd(Mm-4*D);
+  lat += -0.173*sd(F-2*D) - 0.055*sd(Mm-F-2*D) - 0.046*sd(Mm+F-2*D) + 0.033*sd(F+2*D) + 0.017*sd(2*Mm+F);
+  const dist = r - 0.58*cd(Mm-2*D) - 0.46*cd(2*D);
+  const ecl = 23.4393 - 3.563e-7*d;
+  const xg = cd(lon)*cd(lat), yg = sd(lon)*cd(lat), zg = sd(lat);
+  const yq = yg*cd(ecl) - zg*sd(ecl), zq = yg*sd(ecl) + zg*cd(ecl);
+  const ra = norm(Math.atan2(yq, xg) / RAD), dec = Math.atan2(zq, Math.hypot(xg, yq)) / RAD;
+  return { lonM: norm(lon), latM: lat, distER: dist, lonS, ra, dec };
+}
+
+function moonState(jd) {
+  const b = bodies(jd);
+  const cosPsi = cd(b.latM) * cd(b.lonM - b.lonS);
+  const elong = Math.acos(Math.max(-1, Math.min(1, cosPsi))) / RAD; // 0 = nova, 180 = plena
+  return {
+    elong,
+    illum: (1 - cosPsi) / 2,
+    waxing: norm(b.lonM - b.lonS) < 180,
+    distKm: b.distER * 6378.14,
+    ra: b.ra, dec: b.dec, par: Math.asin(1 / b.distER) / RAD
+  };
+}
+
+function moonAlt(jd, lat, lon) {
+  const b = bodies(jd);
+  const gmst = norm(280.46061837 + 360.98564736629 * (jd - 2451545));
+  const H = gmst + lon - b.ra;
+  const alt = Math.asin(sd(lat)*sd(b.dec) + cd(lat)*cd(b.dec)*cd(H)) / RAD;
+  const h0 = 0.7275 * Math.asin(1 / b.distER) / RAD - 0.5667;
+  return alt - h0;
+}
+
+// Sortida i posta durant el dia local que conté "date"
+function riseSet(date, lat, lon) {
+  const start = new Date(date); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+  const j0 = jdOf(start), j1 = jdOf(end), step = 10 / 1440;
+  let rise = null, set = null, prevJ = j0, prevA = moonAlt(j0, lat, lon);
+  for (let j = j0 + step; j <= j1 + 1e-9; j += step) {
+    const a = moonAlt(j, lat, lon);
+    if ((prevA < 0) !== (a < 0)) {
+      let lo = prevJ, hi = j, alo = prevA;
+      for (let i = 0; i < 18; i++) {
+        const mid = (lo + hi) / 2, am = moonAlt(mid, lat, lon);
+        if ((alo < 0) === (am < 0)) { lo = mid; alo = am; } else hi = mid;
+      }
+      const t = dateOf((lo + hi) / 2);
+      if (prevA < 0 && !rise) rise = t;
+      if (prevA >= 0 && !set) set = t;
+    }
+    prevJ = j; prevA = a;
+  }
+  return { rise, set };
+}
+/*END*/
+
+/* ---------- Textos ---------- */
+const MAIN = ['Lluna nova', 'Quart creixent', 'Lluna plena', 'Quart minvant'];
+const NAMES = ['Lluna nova', 'Lluna creixent', 'Quart creixent', 'Gibosa creixent', 'Lluna plena', 'Gibosa minvant', 'Quart minvant', 'Lluna minvant'];
+const TIDE_NOTE = 'A la costa catalana la marea astronòmica és de pocs centímetres; a l\'Atlàntic, de diversos metres.';
+const INFO = [
+  { sky: 'No es veu. Surt i es pon gairebé alhora que el sol, i la cara il·luminada mira cap a ell.',
+    tide: 'Marees vives. El Sol i la Lluna estan alineats i sumen la seva atracció. Les marees més grans arriben un o dos dies després.',
+    light: 'Les nits més fosques del mes. El millor moment per veure la Via Làctia i fer astrofotografia.',
+    myth: 'S\'associa als començaments i a sembrar. No hi ha proves que influeixi en les plantes.' },
+  { sky: 'Una falç fina a l\'oest després de la posta de sol. Sovint es veu tènue la part fosca: és la llum cendrosa, llum solar que rebota a la Terra.',
+    tide: 'Les marees vives es van suavitzant.',
+    light: 'La lluna es pon aviat i la resta de la nit queda fosca.',
+    myth: 'La tradició pagesa la considera bona per sembrar el que creix per sobre de terra.' },
+  { sky: 'Mitja lluna il·luminada per la dreta. Surt cap al migdia i es pon cap a mitjanit: es veu a la tarda i al vespre.',
+    tide: 'Marees mortes. El Sol i la Lluna estiren en angle recte i les marees són les més petites.',
+    light: 'Bon moment per mirar cràters amb prismàtics. Les ombres llargues de la línia entre llum i ombra els donen relleu.',
+    myth: 'S\'associa a créixer i a prendre impuls.' },
+  { sky: 'Més de mitja lluna. Visible des de la tarda fins de matinada.',
+    tide: 'Les marees tornen a créixer cap a les vives.',
+    light: 'La lluna ja il·lumina bona part de la nit i apaga les estrelles febles.',
+    myth: 'Es diu que és bon moment per tallar-se els cabells perquè creixin. Cap estudi ho ha confirmat.' },
+  { sky: 'Surt quan es pon el sol i es pon quan surt. Visible tota la nit.',
+    tide: 'Marees vives, com en lluna nova.',
+    light: 'La nit més clara del mes: entre 0,1 i 0,3 lux, prou per caminar sense llanterna. Alguns estudis (Basilea, 2013; Washington, 2021) troben que dormim una mica menys els dies d\'abans. L\'efecte és petit i encara es debat.',
+    myth: 'Se li atribueixen més naixements, més urgències o canvis d\'humor. Les anàlisis amb moltes dades no ho confirmen.' },
+  { sky: 'Surt després de la posta de sol, cada nit una hora més tard. Es veu de matinada i al matí.',
+    tide: 'Les marees es van reduint cap a les mortes.',
+    light: 'Les primeres hores del vespre són fosques i bones per observar.',
+    myth: 'S\'associa a recollir, podar i tancar etapes.' },
+  { sky: 'Mitja lluna il·luminada per l\'esquerra. Surt cap a mitjanit i es veu de matinada i al cel del matí.',
+    tide: 'Marees mortes.',
+    light: 'Vespres foscos fins a mitjanit.',
+    myth: 'La tradició pagesa la prefereix per podar i tallar fusta.' },
+  { sky: 'Una falç fina a l\'est abans de la sortida del sol.',
+    tide: 'Les marees tornen a augmentar cap a les vives de la lluna nova.',
+    light: 'Nits fosques gairebé senceres.',
+    myth: 'S\'associa al descans i a acabar cicles.' }
+];
+
+const CITIES = [
+  ['Girona', 41.98, 2.82], ['Barcelona', 41.39, 2.17], ['Lleida', 41.62, 0.62], ['Tarragona', 41.12, 1.25],
+  ['Andorra la Vella', 42.51, 1.52], ['Perpinyà', 42.70, 2.90], ['Palma', 39.57, 2.65], ['València', 39.47, -0.38],
+  ['Madrid', 40.42, -3.70]
+];
+
+/* ---------- Formats ---------- */
+const fClock = new Intl.DateTimeFormat('ca-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+const fTime = new Intl.DateTimeFormat('ca-ES', { hour: '2-digit', minute: '2-digit' });
+const fSec = new Intl.DateTimeFormat('ca-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const fLong = new Intl.DateTimeFormat('ca-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+const fShort = new Intl.DateTimeFormat('ca-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+const fMonth = new Intl.DateTimeFormat('ca-ES', { month: 'long', year: 'numeric' });
+const num = (x, d = 1) => x.toLocaleString('ca-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pad = n => String(n).padStart(2, '0');
+const $ = id => document.getElementById(id);
+
+function phaseIcon(type) {
+  const s = 'stroke="#ece7d8" stroke-opacity=".55" stroke-width="1"';
+  if (type === 0) return `<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" ${s}/></svg>`;
+  if (type === 2) return `<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="#ece7d8"/></svg>`;
+  const d = type === 1 ? 'M7 1 A6 6 0 0 1 7 13 Z' : 'M7 1 A6 6 0 0 0 7 13 Z';
+  return `<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" ${s}/><path d="${d}" fill="#ece7d8"/></svg>`;
+}
+
+/* ---------- Cel estrellat ---------- */
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sky = $('sky'), sctx = sky.getContext('2d');
+let stars = [];
+function sizeSky() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  sky.width = innerWidth * dpr; sky.height = innerHeight * dpr;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const n = Math.round(innerWidth * innerHeight / 5200);
+  stars = Array.from({ length: n }, () => ({
+    x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+    r: Math.random() < .08 ? 1.3 : Math.random() * .8 + .25,
+    a: Math.random() * .55 + .15, s: Math.random() * 1.4 + .3, p: Math.random() * 6.28,
+    c: Math.random() < .15 ? '196,210,245' : '236,231,216'
+  }));
+}
+let lastSky = 0, skyDim = 1;
+function drawSky(t) {
+  if (t - lastSky > 40 || reduce) {
+    lastSky = t;
+    sctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const s of stars) {
+      const tw = reduce ? 1 : .65 + .35 * Math.sin(t / 1000 * s.s + s.p);
+      sctx.fillStyle = `rgba(${s.c},${(s.a * tw * skyDim).toFixed(3)})`;
+      sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, 6.2832); sctx.fill();
+    }
+  }
+  if (!reduce) requestAnimationFrame(drawSky);
+}
+
+/* ---------- Lluna ---------- */
+const moonCv = $('moon'), mctx = moonCv.getContext('2d');
+let tex = null;
+function hash(i, j) {
+  let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf*xf*(3-2*xf), v = yf*yf*(3-2*yf);
+  const a = hash(xi, yi), b = hash(xi+1, yi), c = hash(xi, yi+1), d = hash(xi+1, yi+1);
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+function fbm(x, y, o) { let s = 0, amp = .5, f = 1; for (let i = 0; i < o; i++) { s += amp * vnoise(x*f, y*f); amp *= .5; f *= 2.03; } return s; }
+
+// Mars lunars principals vistos des de la Terra (coordenades del disc, nord amunt)
+const MARIA = [
+  [-0.30, 0.47, .30], [0.20, 0.40, .20], [0.38, 0.12, .24], [0.70, 0.30, .13], [0.58, -0.17, .19],
+  [0.33, -0.28, .12], [-0.16, -0.36, .20], [-0.62, 0.18, .40], [-0.50, -0.06, .26], [-0.45, -0.40, .12],
+  [0.0, 0.74, .10], [-0.25, 0.74, .10], [0.22, 0.72, .09], [0.05, 0.10, .12]
+];
+const CRATERS = [[-0.10, -0.72, .045, 1.0], [-0.32, 0.17, .035, .7], [-0.68, 0.40, .025, .9], [0.18, -0.55, .03, .4], [-0.02, 0.05, .03, .3]];
+
+function buildTexture(N) {
+  const alb = new Float32Array(N*N), zz = new Float32Array(N*N), xx = new Float32Array(N*N), edge = new Float32Array(N*N);
+  const mv = MARIA.map(([x, y, r]) => [x, y, Math.sqrt(Math.max(0, 1 - x*x - y*y)), r]);
+  const cv = CRATERS.map(([x, y, r, b]) => [x, y, Math.sqrt(Math.max(0, 1 - x*x - y*y)), r, b]);
+  const rng = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  const small = Array.from({ length: 140 }, () => {
+    const a = rng() * 6.283, rr = Math.sqrt(rng()) * .97, x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+    return [x, y, Math.sqrt(Math.max(0, 1 - x*x - y*y)), .008 + rng() * rng() * .05];
+  });
+  for (let py = 0; py < N; py++) for (let px = 0; px < N; px++) {
+    const i = py * N + px;
+    const x = (px + .5) / N * 2 - 1, y = 1 - (py + .5) / N * 2, r2 = x*x + y*y;
+    const rr = Math.sqrt(r2);
+    edge[i] = Math.max(0, Math.min(1, (1 - rr) * N / 2.2));
+    if (r2 >= 1) continue;
+    const z = Math.sqrt(1 - r2); zz[i] = z; xx[i] = x;
+    const lon = Math.asin(Math.max(-1, Math.min(1, x / Math.sqrt(Math.max(1e-6, 1 - y*y))))), lat = Math.asin(y);
+    let m = 0;
+    for (const [cx, cy, cz, cr] of mv) {
+      const dot = x*cx + y*cy + z*cz, ang = Math.acos(Math.max(-1, Math.min(1, dot)));
+      m += Math.exp(-(ang*ang) / (cr*cr));
+    }
+    const nz = fbm(lon * 3.1 + 11, lat * 3.1 + 5, 4);
+    let mare = m * 1.15 + (nz - .5) * 1.1;
+    mare = Math.max(0, Math.min(1, (mare - .35) / .5)); mare = mare*mare*(3 - 2*mare);
+    let a = 1 - .38 * mare;
+    a += (fbm(lon * 14 + 3, lat * 14 + 9, 4) - .5) * .16;
+    a += (fbm(lon * 40, lat * 40, 2) - .5) * .07;
+    for (const [cx, cy, cz, cr] of small) {
+      const ang = Math.acos(Math.max(-1, Math.min(1, x*cx + y*cy + z*cz)));
+      if (ang < cr * 1.6) { const t = ang / cr; a += t < 1 ? -.07 * (1 - t) : .06 * (1 - Math.abs(t - 1.2) / .4); }
+    }
+    for (const [cx, cy, cz, cr, br] of cv) {
+      const ang = Math.acos(Math.max(-1, Math.min(1, x*cx + y*cy + z*cz)));
+      a += br * .35 * Math.exp(-(ang*ang) / (cr*cr));
+      if (br > .8) a += .05 * Math.exp(-(ang*ang) / (.35*.35)) * (fbm(Math.atan2(y-cy, x-cx) * 6, 1, 2));
+    }
+    alb[i] = Math.max(.35, Math.min(1.25, a)) * (0.86 + 0.14 * Math.pow(z, .4));
+  }
+  return { N, alb, zz, xx, edge };
+}
+
+let drawnKey = '';
+function renderMoon(st) {
+  const css = moonCv.clientWidth || 300;
+  const N = Math.max(160, Math.min(720, Math.round(css * Math.min(2, window.devicePixelRatio || 1))));
+  if (!tex || tex.N !== N) { tex = buildTexture(N); moonCv.width = moonCv.height = N; drawnKey = ''; }
+  const key = N + ':' + st.elong.toFixed(2) + (st.waxing ? 'w' : 'm');
+  if (key === drawnKey) return;
+  drawnKey = key;
+  const e = st.elong * RAD, side = st.waxing ? 1 : -1;
+  const sx = side * Math.sin(e), sz = -Math.cos(e);
+  const img = mctx.createImageData(N, N), D = img.data, { alb, zz, xx, edge } = tex;
+  const soft = .045;
+  for (let i = 0, n = N*N; i < n; i++) {
+    const ed = edge[i];
+    if (ed <= 0) { D[i*4+3] = 0; continue; }
+    const z = zz[i], dot = xx[i]*sx + z*sz;
+    let lit = (dot + soft) / (2 * soft); lit = lit < 0 ? 0 : lit > 1 ? 1 : lit; lit = lit*lit*(3 - 2*lit);
+    const L = lit * (.62 + .38 * Math.sqrt(Math.max(dot, 0))) * (.9 + .1 * z);
+    const es = (1 - lit) * .055;
+    const a = alb[i];
+    const o = i * 4;
+    D[o]   = Math.min(255, a * (L * 242 + es * 120));
+    D[o+1] = Math.min(255, a * (L * 236 + es * 135));
+    D[o+2] = Math.min(255, a * (L * 222 + es * 170));
+    D[o+3] = 255 * ed;
+  }
+  mctx.putImageData(img, 0, 0);
+}
+
+/* ---------- Estat i interfície ---------- */
+let offsetH = 0, phaseCache = { from: 0, list: [] }, place = { name: 'Girona', lat: 41.98, lon: 2.82 }, lastPhaseIdx = -1;
+let rsCache = { key: '', v: null };
+
+function getPhases(jd) {
+  if (!phaseCache.list.length || jd < phaseCache.from + 40 || jd > phaseCache.from + 200) {
+    phaseCache = { from: jd - 45, list: phasesAround(jd - 45, 92) };
+  }
+  return phaseCache.list;
+}
+
+function phaseIndex(jd, prev, next) {
+  if (Math.abs(jd - prev.jd) < .75) return prev.type * 2;
+  if (Math.abs(next.jd - jd) < .75) return next.type * 2;
+  return prev.type * 2 + 1;
+}
+
+function update() {
+  const real = new Date();
+  const view = new Date(real.getTime() + offsetH * 3600000);
+  const jd = jdOf(view);
+  const list = getPhases(jd);
+  let pi = list.findIndex(p => p.jd > jd);
+  const next = list[pi], prev = list[pi - 1];
+  const prevNew = [...list.slice(0, pi)].reverse().find(p => p.type === 0);
+  const st = moonState(jd);
+  const age = jd - prevNew.jd;
+
+  $('clock').innerHTML = `${fClock.format(real)}<br><b>${fSec.format(real)}</b>`;
+
+  renderMoon(st);
+  $('halo').style.setProperty('--h', (.15 + .85 * st.illum).toFixed(3));
+  skyDim = 1 - .45 * st.illum;
+
+  const idx = phaseIndex(jd, prev, next);
+  const nameEl = $('phaseName');
+  if (idx !== lastPhaseIdx) {
+    nameEl.textContent = NAMES[idx];
+    nameEl.classList.remove('fade'); void nameEl.offsetWidth; nameEl.classList.add('fade');
+    renderImpl(idx);
+    lastPhaseIdx = idx;
+  }
+  const exact = [prev, next].find(p => Math.abs(p.jd - jd) < .75);
+  $('phaseSub').textContent = exact
+    ? `Fase exacta: ${fLong.format(dateOf(exact.jd))} a les ${fTime.format(dateOf(exact.jd))}`
+    : (st.waxing ? 'La part il·luminada creix cada nit' : 'La part il·luminada minva cada nit');
+  $('eyebrow').textContent = offsetH ? 'Fase en aquest moment' : 'Fase actual';
+
+  $('sIllum').textContent = num(st.illum * 100, 1) + ' %';
+  $('sAge').textContent = num(age, 1) + ' d';
+  $('sTrend').textContent = st.waxing ? 'Creixent' : 'Minvant';
+
+  const v = $('viewing');
+  v.textContent = `Mostrant ${fShort.format(view)} · ${fTime.format(view)}`;
+  v.classList.toggle('on', offsetH !== 0);
+  $('nowBtn').disabled = offsetH === 0;
+
+  // Compte enrere
+  $('nextName').textContent = MAIN[next.type];
+  const nd = dateOf(next.jd);
+  $('nextWhen').textContent = `${fLong.format(nd)} · ${fTime.format(nd)}`;
+  let ms = Math.max(0, nd - view), s = Math.floor(ms / 1000);
+  $('cD').textContent = Math.floor(s / 86400); s %= 86400;
+  $('cH').textContent = pad(Math.floor(s / 3600)); s %= 3600;
+  $('cM').textContent = pad(Math.floor(s / 60));
+  $('cS').textContent = pad(s % 60);
+
+  // Anell
+  const frac = age / SYN;
+  $('marker').style.transform = `rotate(${(frac * 360).toFixed(2)}deg)`;
+  $('arc').setAttribute('stroke-dashoffset', (628.32 * (1 - frac)).toFixed(2));
+  $('ringAge').textContent = num(age, 1);
+
+  // Pròximes fases
+  const up = list.slice(pi, pi + 4);
+  const upKey = up.map(p => p.jd.toFixed(4)).join();
+  if ($('upcoming').dataset.k !== upKey) {
+    $('upcoming').dataset.k = upKey;
+    $('upcoming').innerHTML = up.map(p => {
+      const d = dateOf(p.jd);
+      return `<div class="row">${phaseIcon(p.type)}<span class="n">${MAIN[p.type]}</span><span class="d">${fShort.format(d)}<br>${fTime.format(d)}</span></div>`;
+    }).join('');
+  }
+
+  // Sortida, posta i distància
+  const rsKey = view.toDateString() + place.lat + ',' + place.lon;
+  if (rsCache.key !== rsKey) rsCache = { key: rsKey, v: riseSet(view, place.lat, place.lon) };
+  $('fRise').textContent = rsCache.v.rise ? fTime.format(rsCache.v.rise) : '—';
+  $('fSet').textContent = rsCache.v.set ? fTime.format(rsCache.v.set) : '—';
+  $('fDist').textContent = Math.round(st.distKm / 1000).toLocaleString('ca-ES') + ' mil km';
+  $('rot').classList.toggle('south', place.lat < 0);
+
+  renderCalendar(list, jd);
+}
+
+function renderImpl(idx) {
+  const it = INFO[idx];
+  $('implTitle').textContent = `Què implica: ${NAMES[idx].toLowerCase()}`;
+  $('implGrid').innerHTML = `
+    <div><h3>Al cel</h3><p>${it.sky}</p></div>
+    <div><h3>Marees</h3><p>${it.tide}</p><p style="color:var(--muted);font-size:13px">${TIDE_NOTE}</p></div>
+    <div><h3>Llum de nit</h3><p>${it.light}</p></div>
+    <div class="myth"><h3>Tradició popular <span class="belief">creença</span></h3><p>${it.myth}</p></div>`;
+  $('implGrid').classList.remove('fade'); void $('implGrid').offsetWidth; $('implGrid').classList.add('fade');
+}
+
+function renderCalendar(list, jd) {
+  const items = list.filter(p => (p.type === 0 || p.type === 2) && p.jd > jd && p.jd < jd + 183);
+  const key = items.map(p => p.jd.toFixed(3)).join();
+  const el = $('calendar');
+  if (el.dataset.k === key) return;
+  el.dataset.k = key;
+  const half = Math.ceil(items.length / 2);
+  const col = arr => `<div class="rows">${arr.map(p => {
+    const d = dateOf(p.jd);
+    const sup = p.type === 2 && moonState(p.jd).distKm < 362000 ? '<span class="tag">Superlluna</span>' : '';
+    return `<div class="row">${phaseIcon(p.type)}<span class="n">${MAIN[p.type]}${sup}</span><span class="d">${fShort.format(d)}<br>${fTime.format(d)}</span></div>`;
+  }).join('')}</div>`;
+  el.innerHTML = col(items.slice(0, half)) + col(items.slice(half));
+}
+
+/* ---------- Ubicació ---------- */
+function setupPlace() {
+  const sel = $('city');
+  sel.innerHTML = CITIES.map((c, i) => `<option value="${i}">${c[0]}</option>`).join('') + '<option value="custom">Coordenades pròpies…</option>';
+  try {
+    const saved = JSON.parse(localStorage.getItem('rl-place') || 'null');
+    if (saved && isFinite(saved.lat) && isFinite(saved.lon)) place = saved;
+  } catch (e) {}
+  const i = CITIES.findIndex(c => c[0] === place.name);
+  sel.value = i >= 0 ? String(i) : 'custom';
+  $('coords').hidden = i >= 0;
+  $('lat').value = place.lat; $('lon').value = place.lon;
+  const save = () => { try { localStorage.setItem('rl-place', JSON.stringify(place)); } catch (e) {} update(); };
+  sel.addEventListener('change', () => {
+    if (sel.value === 'custom') { $('coords').hidden = false; place = { name: 'custom', lat: +$('lat').value || place.lat, lon: +$('lon').value || place.lon }; }
+    else { const c = CITIES[+sel.value]; place = { name: c[0], lat: c[1], lon: c[2] }; $('coords').hidden = true; $('lat').value = c[1]; $('lon').value = c[2]; }
+    save();
+  });
+  const onCoord = () => {
+    const la = parseFloat($('lat').value), lo = parseFloat($('lon').value);
+    if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) { place = { name: 'custom', lat: la, lon: lo }; save(); }
+  };
+  $('lat').addEventListener('change', onCoord); $('lon').addEventListener('change', onCoord);
+}
+
+/* ---------- Viatge pel temps ---------- */
+function setupScrub() {
+  const r = $('scrub');
+  let raf = 0;
+  r.addEventListener('input', () => {
+    offsetH = +r.value;
+    $('scrubLabel').textContent = offsetH === 0 ? 'Arrossega per viatjar pel cicle'
+      : `${offsetH > 0 ? '+' : '−'}${Math.floor(Math.abs(offsetH) / 24)} d ${Math.abs(offsetH) % 24} h`;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(update);
+  });
+  $('nowBtn').addEventListener('click', () => {
+    const startV = offsetH, t0 = performance.now(), dur = reduce ? 0 : 700;
+    const step = t => {
+      const k = dur ? Math.min(1, (t - t0) / dur) : 1, ease = 1 - Math.pow(1 - k, 3);
+      offsetH = Math.round(startV * (1 - ease)); r.value = offsetH; update();
+      if (k < 1) requestAnimationFrame(step);
+      else { offsetH = 0; r.value = 0; $('scrubLabel').textContent = 'Arrossega per viatjar pel cicle'; update(); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+sizeSky(); requestAnimationFrame(drawSky);
+addEventListener('resize', () => { sizeSky(); if (reduce) drawSky(0); update(); });
+setupPlace(); setupScrub(); update();
+setInterval(update, 1000);
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>
