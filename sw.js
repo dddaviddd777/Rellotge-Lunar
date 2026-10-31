@@ -1,6 +1,6 @@
 // Guarda l'app al dispositiu perquè funcioni sense connexió.
 // Quan canviïs qualsevol fitxer, puja aquest número de versió.
-const VERSIO = 'rellotge-lunar-v2';
+const VERSIO = 'rellotge-lunar-v3';
 const FITXERS = ['./', 'index.html', 'manifest.webmanifest', 'icona-180.png', 'icona-192.png', 'icona-512.png', 'icona-maskable-512.png'];
 
 self.addEventListener('install', e => {
